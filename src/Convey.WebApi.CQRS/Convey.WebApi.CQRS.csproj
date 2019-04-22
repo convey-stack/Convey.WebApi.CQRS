@@ -4,11 +4,18 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
     <ProjectReference Include="..\..\..\Convey.CQRS.Commands\src\Convey.CQRS.Commands\Convey.CQRS.Commands.csproj" />
     <ProjectReference Include="..\..\..\Convey.CQRS.Events\src\Convey.CQRS.Events\Convey.CQRS.Events.csproj" />
     <ProjectReference Include="..\..\..\Convey.CQRS.Queries\src\Convey.CQRS.Queries\Convey.CQRS.Queries.csproj" />
     <ProjectReference Include="..\..\..\Convey.WebApi\src\Convey.WebApi\Convey.WebApi.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <PackageReference Include="Convey.CQRS.Commands" Version="0.0.1-preview" />
+    <PackageReference Include="Convey.CQRS.Events" Version="0.0.1-preview" />
+    <PackageReference Include="Convey.CQRS.Queries" Version="0.0.1-preview" />
+    <PackageReference Include="Convey.WebApi" Version="0.0.1-preview" />
   </ItemGroup>
 
 </Project>
