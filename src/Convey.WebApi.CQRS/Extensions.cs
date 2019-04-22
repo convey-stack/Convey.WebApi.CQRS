@@ -21,12 +21,9 @@ namespace Convey.WebApi.CQRS
         public static IApplicationBuilder UsePublicMessages(this IApplicationBuilder app,
             string endpoint = "/_messages", IEnumerable<Type> assemblyTypes = null,
             bool attributeRequired = true, Type attributeType = null)
-        {
-
-            return app.UseMiddleware<PublicMessagesMiddleware>(string.IsNullOrWhiteSpace(endpoint) ? "/_messages" :
+            => app.UseMiddleware<PublicMessagesMiddleware>(string.IsNullOrWhiteSpace(endpoint) ? "/_messages" :
                 endpoint.StartsWith("/") ? endpoint : $"/{endpoint}",
                 assemblyTypes ?? Enumerable.Empty<Type>(), attributeRequired,
                 attributeType ?? typeof(PublicMessageAttribute));
-        }
     }
 }
