@@ -104,7 +104,7 @@ namespace Convey.WebApi.CQRS.Builders
             }
 
             var dispatcher = ctx.RequestServices.GetService<ICommandDispatcher>();
-            await dispatcher.DispatchAsync(req);
+            await dispatcher.SendAsync(req);
 
             if (!(afterDispatch is null))
             {
