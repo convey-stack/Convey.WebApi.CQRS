@@ -36,11 +36,13 @@ namespace Convey.WebApi.CQRS.Builders
 
                 var dispatcher = ctx.RequestServices.GetService<IQueryDispatcher>();
                 var result = await dispatcher.QueryAsync<TQuery, TResult>(req);
-
-                if (!(afterDispatch is null))
+                if (afterDispatch is null)
                 {
-                    await afterDispatch(req, result, ctx);
+                    ctx.Response.WriteJson(result);
+                    return;
                 }
+
+                await afterDispatch(req, result, ctx);
             });
 
             return this;
@@ -94,22 +96,24 @@ namespace Convey.WebApi.CQRS.Builders
             return this;
         }
 
-        private static async Task BuildContext<T>(T req, HttpContext ctx,
+        private static async Task BuildContext<T>(T request, HttpContext context,
             Func<T, HttpContext, Task> beforeDispatch = null,
             Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand
         {
             if (!(beforeDispatch is null))
             {
-                await beforeDispatch(req, ctx);
+                await beforeDispatch(request, context);
             }
 
-            var dispatcher = ctx.RequestServices.GetService<ICommandDispatcher>();
-            await dispatcher.SendAsync(req);
-
-            if (!(afterDispatch is null))
+            var dispatcher = context.RequestServices.GetService<ICommandDispatcher>();
+            await dispatcher.SendAsync(request);
+            if (afterDispatch is null)
             {
-                await afterDispatch(req, ctx);
+                context.Response.StatusCode = 200;
+                return;
             }
+
+            await afterDispatch(request, context);
         }
     }
 }
