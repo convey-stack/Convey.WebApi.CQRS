@@ -33,8 +33,7 @@ namespace Convey.WebApi.CQRS.Middlewares
         private static int _initialized;
         private static string _serializedContracts = "{}";
 
-        public PublicContractsMiddleware(RequestDelegate next, string endpoint, bool attributeRequired,
-            Type attributeType)
+        public PublicContractsMiddleware(RequestDelegate next, string endpoint, Type attributeType)
         {
             _next = next;
             _endpoint = endpoint;
@@ -43,7 +42,7 @@ namespace Convey.WebApi.CQRS.Middlewares
                 return;
             }
 
-            Load(attributeRequired, attributeType);
+            Load(attributeType);
         }
 
         public Task InvokeAsync(HttpContext context)
@@ -59,7 +58,7 @@ namespace Convey.WebApi.CQRS.Middlewares
             return Task.CompletedTask;
         }
 
-        private static void Load(bool attributeRequired, Type attributeType)
+        private static void Load(Type attributeType)
         {
             if (Interlocked.Exchange(ref _initialized, 1) == 1)
             {
@@ -68,8 +67,8 @@ namespace Convey.WebApi.CQRS.Middlewares
 
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var contracts = assemblies.SelectMany(a => a.GetTypes())
-                .Where(t => (!attributeRequired || !(t.GetCustomAttribute(attributeType) is null)) &&
-                            !t.IsInterface).ToArray();
+                .Where(t => !(t.GetCustomAttribute(attributeType) is null) && !t.IsInterface)
+                .ToArray();
 
             foreach (var command in contracts.Where(t => typeof(ICommand).IsAssignableFrom(t)))
             {

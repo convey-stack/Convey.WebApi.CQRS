@@ -27,13 +27,13 @@ namespace Convey.WebApi.CQRS
             Func<IDispatcherEndpointsBuilder, IDispatcherEndpointsBuilder> builder)
             => builder(new DispatcherEndpointsBuilder(endpoints));
 
+        public static IApplicationBuilder UsePublicContracts<T>(this IApplicationBuilder app,
+            string endpoint = "/_contracts") => app.UsePublicContracts(endpoint, typeof(T));
+
         public static IApplicationBuilder UsePublicContracts(this IApplicationBuilder app,
-            string endpoint = "/_contracts", IEnumerable<Type> assemblyTypes = null,
-            bool attributeRequired = true, Type attributeType = null)
+            string endpoint = "/_contracts", Type attributeType = null)
             => app.UseMiddleware<PublicContractsMiddleware>(string.IsNullOrWhiteSpace(endpoint) ? "/_contracts" :
-                endpoint.StartsWith("/") ? endpoint : $"/{endpoint}",
-                assemblyTypes ?? Enumerable.Empty<Type>(), attributeRequired,
-                attributeType ?? typeof(PublicContractAttribute));
+                endpoint.StartsWith("/") ? endpoint : $"/{endpoint}", attributeType ?? typeof(PublicContractAttribute));
 
         public static Task SendAsync<T>(this HttpContext context, T command) where T : class, ICommand
             => context.RequestServices.GetService<ICommandDispatcher>().SendAsync(command);
