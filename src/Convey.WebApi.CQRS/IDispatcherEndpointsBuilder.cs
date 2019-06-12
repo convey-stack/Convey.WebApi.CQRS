@@ -25,8 +25,5 @@ namespace Convey.WebApi.CQRS
             Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand;
 
         IDispatcherEndpointsBuilder Delete(string path, Func<HttpContext, Task> context = null);
-
-        IDispatcherEndpointsBuilder Delete<T>(string path, Func<T, HttpContext, Task> beforeDispatch = null,
-            Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand;
     }
 }

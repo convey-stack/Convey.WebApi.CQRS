@@ -3,7 +3,7 @@ using System;
 namespace Convey.WebApi.CQRS
 {
     //Marker
-    public class PublicMessageAttribute : Attribute
+    public class PublicContractAttribute : Attribute
     {
     }
 }

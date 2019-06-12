@@ -87,15 +87,6 @@ namespace Convey.WebApi.CQRS.Builders
             return this;
         }
 
-        public IDispatcherEndpointsBuilder Delete<T>(string path, Func<T, HttpContext, Task> beforeDispatch = null,
-            Func<T, HttpContext, Task> afterDispatch = null)
-            where T : class, ICommand
-        {
-            _builder.Delete<T>(path, (req, ctx) => BuildContext(req, ctx, beforeDispatch, afterDispatch));
-
-            return this;
-        }
-
         private static async Task BuildContext<T>(T request, HttpContext context,
             Func<T, HttpContext, Task> beforeDispatch = null,
             Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand

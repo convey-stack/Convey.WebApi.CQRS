@@ -14,7 +14,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Convey.WebApi.CQRS.Middlewares
 {
-    public class PublicMessagesMiddleware
+    public class PublicContractsMiddleware
     {
         private const string ContentType = "application/json";
         private readonly RequestDelegate _next;
@@ -29,12 +29,12 @@ namespace Convey.WebApi.CQRS.Middlewares
             }
         };
 
-        private static readonly MessageTypes Messages = new MessageTypes();
+        private static readonly ContractTypes Contracts = new ContractTypes();
         private static int _initialized;
-        private static string _serializedMessages = "{}";
+        private static string _serializedContracts = "{}";
 
-        public PublicMessagesMiddleware(RequestDelegate next, string endpoint, IEnumerable<Type> assemblyTypes,
-            bool attributeRequired, Type attributeType)
+        public PublicContractsMiddleware(RequestDelegate next, string endpoint, bool attributeRequired,
+            Type attributeType)
         {
             _next = next;
             _endpoint = endpoint;
@@ -43,7 +43,7 @@ namespace Convey.WebApi.CQRS.Middlewares
                 return;
             }
 
-            Load(attributeRequired, attributeType, assemblyTypes);
+            Load(attributeRequired, attributeType);
         }
 
         public Task InvokeAsync(HttpContext context)
@@ -54,58 +54,50 @@ namespace Convey.WebApi.CQRS.Middlewares
             }
 
             context.Response.ContentType = ContentType;
-            context.Response.WriteAsync(_serializedMessages);
+            context.Response.WriteAsync(_serializedContracts);
 
             return Task.CompletedTask;
         }
 
-        private static void Load(bool attributeRequired, Type attributeType, IEnumerable<Type> assemblyTypes)
+        private static void Load(bool attributeRequired, Type attributeType)
         {
             if (Interlocked.Exchange(ref _initialized, 1) == 1)
             {
                 return;
             }
 
-            var assemblies = new HashSet<Assembly>
-            {
-                Assembly.GetEntryAssembly()
-            };
-            foreach (var assemblyType in assemblyTypes ?? Enumerable.Empty<Type>())
-            {
-                assemblies.Add(Assembly.GetAssembly(assemblyType));
-            }
-
-            var messages = assemblies.SelectMany(a => a.GetTypes())
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var contracts = assemblies.SelectMany(a => a.GetTypes())
                 .Where(t => (!attributeRequired || !(t.GetCustomAttribute(attributeType) is null)) &&
                             !t.IsInterface).ToArray();
 
-            foreach (var command in messages.Where(t => typeof(ICommand).IsAssignableFrom(t)))
+            foreach (var command in contracts.Where(t => typeof(ICommand).IsAssignableFrom(t)))
             {
                 var instance = FormatterServices.GetUninitializedObject(command);
                 var name = instance.GetType().Name;
-                if (Messages.Commands.ContainsKey(name))
+                if (Contracts.Commands.ContainsKey(name))
                 {
                     throw new InvalidOperationException($"Command: '{name}' already exists.");
                 }
 
                 SetInstanceProperties(instance);
-                Messages.Commands[name] = instance;
+                Contracts.Commands[name] = instance;
             }
 
-            foreach (var @event in messages.Where(t => typeof(IEvent).IsAssignableFrom(t)))
+            foreach (var @event in contracts.Where(t => typeof(IEvent).IsAssignableFrom(t)))
             {
                 var instance = FormatterServices.GetUninitializedObject(@event);
                 var name = instance.GetType().Name;
-                if (Messages.Events.ContainsKey(name))
+                if (Contracts.Events.ContainsKey(name))
                 {
                     throw new InvalidOperationException($"Event: '{name}' already exists.");
                 }
 
                 SetInstanceProperties(instance);
-                Messages.Events[name] = instance;
+                Contracts.Events[name] = instance;
             }
 
-            _serializedMessages = JsonConvert.SerializeObject(Messages, SerializerSettings);
+            _serializedContracts = JsonConvert.SerializeObject(Contracts, SerializerSettings);
         }
 
         private static void SetInstanceProperties(object instance)
@@ -144,7 +136,7 @@ namespace Convey.WebApi.CQRS.Middlewares
             field?.SetValue(instance, value);
         }
 
-        private class MessageTypes
+        private class ContractTypes
         {
             public Dictionary<string, object> Commands { get; } = new Dictionary<string, object>();
             public Dictionary<string, object> Events { get; } = new Dictionary<string, object>();
