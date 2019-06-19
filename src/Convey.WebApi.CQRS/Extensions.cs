@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Convey.CQRS.Commands;
 using Convey.CQRS.Queries;
@@ -31,9 +29,14 @@ namespace Convey.WebApi.CQRS
             string endpoint = "/_contracts") => app.UsePublicContracts(endpoint, typeof(T));
 
         public static IApplicationBuilder UsePublicContracts(this IApplicationBuilder app,
-            string endpoint = "/_contracts", Type attributeType = null)
+            string endpoint = "/_contracts", bool attributeRequired = true) =>
+            app.UsePublicContracts(endpoint, null, attributeRequired);
+        
+        public static IApplicationBuilder UsePublicContracts(this IApplicationBuilder app,
+            string endpoint = "/_contracts", Type attributeType = null, bool attributeRequired = true)
             => app.UseMiddleware<PublicContractsMiddleware>(string.IsNullOrWhiteSpace(endpoint) ? "/_contracts" :
-                endpoint.StartsWith("/") ? endpoint : $"/{endpoint}", attributeType ?? typeof(PublicContractAttribute));
+                endpoint.StartsWith("/") ? endpoint : $"/{endpoint}", attributeType ?? typeof(PublicContractAttribute),
+                attributeRequired);
 
         public static Task SendAsync<T>(this HttpContext context, T command) where T : class, ICommand
             => context.RequestServices.GetService<ICommandDispatcher>().SendAsync(command);

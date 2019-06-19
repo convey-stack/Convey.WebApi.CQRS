@@ -19,6 +19,7 @@ namespace Convey.WebApi.CQRS.Middlewares
         private const string ContentType = "application/json";
         private readonly RequestDelegate _next;
         private readonly string _endpoint;
+        private readonly bool _attributeRequired;
 
         private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
         {
@@ -26,17 +27,20 @@ namespace Convey.WebApi.CQRS.Middlewares
             Converters = new List<JsonConverter>
             {
                 new StringEnumConverter(new CamelCaseNamingStrategy())
-            }
+            },
+            Formatting = Formatting.Indented
         };
 
         private static readonly ContractTypes Contracts = new ContractTypes();
         private static int _initialized;
         private static string _serializedContracts = "{}";
 
-        public PublicContractsMiddleware(RequestDelegate next, string endpoint, Type attributeType)
+        public PublicContractsMiddleware(RequestDelegate next, string endpoint, Type attributeType,
+            bool attributeRequired)
         {
             _next = next;
             _endpoint = endpoint;
+            _attributeRequired = attributeRequired;
             if (_initialized == 1)
             {
                 return;
@@ -58,7 +62,7 @@ namespace Convey.WebApi.CQRS.Middlewares
             return Task.CompletedTask;
         }
 
-        private static void Load(Type attributeType)
+        private void Load(Type attributeType)
         {
             if (Interlocked.Exchange(ref _initialized, 1) == 1)
             {
@@ -67,7 +71,7 @@ namespace Convey.WebApi.CQRS.Middlewares
 
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             var contracts = assemblies.SelectMany(a => a.GetTypes())
-                .Where(t => !(t.GetCustomAttribute(attributeType) is null) && !t.IsInterface)
+                .Where(t => (!_attributeRequired || !(t.GetCustomAttribute(attributeType) is null)) && !t.IsInterface)
                 .ToArray();
 
             foreach (var command in contracts.Where(t => typeof(ICommand).IsAssignableFrom(t)))
