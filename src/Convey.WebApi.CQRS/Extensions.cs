@@ -29,9 +29,9 @@ namespace Convey.WebApi.CQRS
             string endpoint = "/_contracts") => app.UsePublicContracts(endpoint, typeof(T));
 
         public static IApplicationBuilder UsePublicContracts(this IApplicationBuilder app,
-            string endpoint = "/_contracts", bool attributeRequired = true) =>
-            app.UsePublicContracts(endpoint, null, attributeRequired);
-        
+            bool attributeRequired, string endpoint = "/_contracts")
+            => app.UsePublicContracts(endpoint, null, attributeRequired);
+
         public static IApplicationBuilder UsePublicContracts(this IApplicationBuilder app,
             string endpoint = "/_contracts", Type attributeType = null, bool attributeRequired = true)
             => app.UseMiddleware<PublicContractsMiddleware>(string.IsNullOrWhiteSpace(endpoint) ? "/_contracts" :
