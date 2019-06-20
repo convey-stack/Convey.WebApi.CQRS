@@ -38,7 +38,7 @@ namespace Convey.WebApi.CQRS.Builders
                 var result = await dispatcher.QueryAsync<TQuery, TResult>(req);
                 if (afterDispatch is null)
                 {
-                    if (result is null)
+                    if (result == null)
                     {
                         ctx.Response.StatusCode = 404;
                         return;
