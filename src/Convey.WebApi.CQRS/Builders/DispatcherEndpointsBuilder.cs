@@ -38,6 +38,12 @@ namespace Convey.WebApi.CQRS.Builders
                 var result = await dispatcher.QueryAsync<TQuery, TResult>(req);
                 if (afterDispatch is null)
                 {
+                    if (result is null)
+                    {
+                        ctx.Response.StatusCode = 404;
+                        return;
+                    }
+
                     ctx.Response.WriteJson(result);
                     return;
                 }
@@ -59,7 +65,7 @@ namespace Convey.WebApi.CQRS.Builders
             Func<T, HttpContext, Task> afterDispatch = null)
             where T : class, ICommand
         {
-            _builder.Post<T>(path, (req, ctx) => BuildContext(req, ctx, beforeDispatch, afterDispatch));
+            _builder.Post<T>(path, (req, ctx) => BuildCommandContext(req, ctx, beforeDispatch, afterDispatch));
 
             return this;
         }
@@ -75,7 +81,7 @@ namespace Convey.WebApi.CQRS.Builders
             Func<T, HttpContext, Task> afterDispatch = null)
             where T : class, ICommand
         {
-            _builder.Put<T>(path, (req, ctx) => BuildContext(req, ctx, beforeDispatch, afterDispatch));
+            _builder.Put<T>(path, (req, ctx) => BuildCommandContext(req, ctx, beforeDispatch, afterDispatch));
 
             return this;
         }
@@ -87,7 +93,15 @@ namespace Convey.WebApi.CQRS.Builders
             return this;
         }
 
-        private static async Task BuildContext<T>(T request, HttpContext context,
+        public IDispatcherEndpointsBuilder Delete<T>(string path, Func<T, HttpContext, Task> beforeDispatch = null,
+            Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand
+        {
+            _builder.Delete<T>(path, (req, ctx) => BuildCommandContext(req, ctx, beforeDispatch, afterDispatch));
+
+            return this;
+        }
+
+        private static async Task BuildCommandContext<T>(T request, HttpContext context,
             Func<T, HttpContext, Task> beforeDispatch = null,
             Func<T, HttpContext, Task> afterDispatch = null) where T : class, ICommand
         {
