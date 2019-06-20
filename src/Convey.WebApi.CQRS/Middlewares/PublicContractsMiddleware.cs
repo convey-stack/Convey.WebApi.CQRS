@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Convey.CQRS.Commands;
 using Convey.CQRS.Events;
+using Convey.WebApi.Helpers;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -83,11 +84,12 @@ namespace Convey.WebApi.CQRS.Middlewares
                     throw new InvalidOperationException($"Command: '{name}' already exists.");
                 }
 
-                SetInstanceProperties(instance);
+                instance.SetDefaultInstanceProperties();
                 Contracts.Commands[name] = instance;
             }
 
-            foreach (var @event in contracts.Where(t => typeof(IEvent).IsAssignableFrom(t)))
+            foreach (var @event in contracts.Where(t => typeof(IEvent).IsAssignableFrom(t) &&
+                                                        t != typeof(RejectedEvent)))
             {
                 var instance = FormatterServices.GetUninitializedObject(@event);
                 var name = instance.GetType().Name;
@@ -96,47 +98,11 @@ namespace Convey.WebApi.CQRS.Middlewares
                     throw new InvalidOperationException($"Event: '{name}' already exists.");
                 }
 
-                SetInstanceProperties(instance);
+                instance.SetDefaultInstanceProperties();
                 Contracts.Events[name] = instance;
             }
 
             _serializedContracts = JsonConvert.SerializeObject(Contracts, SerializerSettings);
-        }
-
-        private static void SetInstanceProperties(object instance)
-        {
-            var type = instance.GetType();
-            foreach (var propertyInfo in type.GetProperties())
-            {
-                if (propertyInfo.PropertyType == typeof(string))
-                {
-                    SetValue(propertyInfo, instance, string.Empty);
-                    continue;
-                }
-
-                if (!propertyInfo.PropertyType.IsClass)
-                {
-                    continue;
-                }
-
-                var propertyInstance = FormatterServices.GetUninitializedObject(propertyInfo.PropertyType);
-                SetValue(propertyInfo, instance, propertyInstance);
-                SetInstanceProperties(propertyInstance);
-            }
-        }
-
-        private static void SetValue(PropertyInfo propertyInfo, object instance, object value)
-        {
-            if (propertyInfo.CanWrite)
-            {
-                propertyInfo.SetValue(instance, value);
-                return;
-            }
-
-            var propertyName = propertyInfo.Name;
-            var field = instance.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic)
-                .SingleOrDefault(x => x.Name.StartsWith($"<{propertyName}>"));
-            field?.SetValue(instance, value);
         }
 
         private class ContractTypes
